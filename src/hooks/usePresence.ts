@@ -16,11 +16,11 @@ export function usePresence<T = any>(channelNameOrNameAndOptions: ChannelParamet
       : (channelNameOrNameAndOptions.realtime || assertConfiguration())
 
     const channelName = typeof channelNameOrNameAndOptions === 'string'
-        ? channelNameOrNameAndOptions 
+        ? channelNameOrNameAndOptions
         : channelNameOrNameAndOptions.channelName;
 
     const channel = typeof channelNameOrNameAndOptions === 'string'
-        ? ably.channels.get(channelName) 
+        ? ably.channels.get(channelName)
         : ably.channels.get(channelName, channelNameOrNameAndOptions.options);
 
     const [presenceData, updatePresenceData] = useState([]) as [Array<PresenceMessage<T>>, UseStatePresenceUpdate];
@@ -28,7 +28,7 @@ export function usePresence<T = any>(channelNameOrNameAndOptions: ChannelParamet
     const updatePresence = async (message?: Types.PresenceMessage) => {
         const snapshot = await channel.presence.get();
         updatePresenceData(snapshot);
-        
+
         onPresenceUpdated?.call(this, message);
     }
 
@@ -37,7 +37,11 @@ export function usePresence<T = any>(channelNameOrNameAndOptions: ChannelParamet
         channel.presence.subscribe('leave', updatePresence);
         channel.presence.subscribe('update', updatePresence);
 
-        await channel.presence.enter(messageOrPresenceObject);
+        try {
+            await channel.presence.enter(messageOrPresenceObject);
+        } catch (error) {
+            console.error('Error entering presence:', error);
+        }
 
         const snapshot = await channel.presence.get();
         updatePresenceData(snapshot);
@@ -58,7 +62,7 @@ export function usePresence<T = any>(channelNameOrNameAndOptions: ChannelParamet
     };
 
     useEffect(useEffectHook, []);
-    
+
     const updateStatus = useCallback((messageOrPresenceObject: T) => {
         channel.presence.update(messageOrPresenceObject);
     }, [channel]);
